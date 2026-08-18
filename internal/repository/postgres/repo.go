@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-	"whisperchat/internal/model"
+	"whisperchat/internal/domain"
 
-	"github.com/go-telegram/bot/models"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type PostgresRepo struct {
@@ -32,7 +32,7 @@ func NewPostgresRepo(dsn string) (*PostgresRepo, error) {
 	}, nil
 }
 
-func (p *PostgresRepo) Save(msg *model.Message) error {
+func (p *PostgresRepo) Save(msg *domain.Message) error {
 	query := `
 		INSERT INTO messages (room_id, display_name, content, created_at)
 		VALUES ($1,$2,$3,$4) 
@@ -49,12 +49,12 @@ func (p *PostgresRepo) Save(msg *model.Message) error {
 	return err
 }
 
-func (p *PostgresRepo) GetRecent(roomID string, limit int) ([]*models.Message, error) {
+func (p *PostgresRepo) GetRecent(roomID string, limit int) ([]*domain.Message, error) {
 	query := `
 		SELECT room_id, display_name, content, created_at
 		FROM messages 
 		WHERE room_id = $1 
-		ORDER_BY created_at ASC  
+		ORDER BY created_at ASC  
 		LIMIT $2
 	`
 
@@ -64,10 +64,10 @@ func (p *PostgresRepo) GetRecent(roomID string, limit int) ([]*models.Message, e
 	}
 	defer rows.Close()
 
-	var messages []*model.Message
+	var messages []*domain.Message
 
 	for rows.Next() {
-		msg := &models.Message{}
+		msg := &domain.Message{}
 		err := rows.Scan(&msg.RoomID, &msg.DisplayName, &msg.Content, &msg.CreatedAt)
 		if err != nil {
 			return nil, err
