@@ -49,7 +49,7 @@ func (p *PostgresRepo) Save(msg *domain.Message) error {
 	return err
 }
 
-func (p *PostgresRepo) GetRecent(roomID string, limit int) ([]*domain.Message, error) {
+func (p *PostgresRepo) GetRecent(roomID string, limit int) ([]domain.Message, error) {
 	query := `
 		SELECT room_id, display_name, content, created_at
 		FROM messages 
@@ -64,10 +64,10 @@ func (p *PostgresRepo) GetRecent(roomID string, limit int) ([]*domain.Message, e
 	}
 	defer rows.Close()
 
-	var messages []*domain.Message
+	var messages []domain.Message
 
 	for rows.Next() {
-		msg := &domain.Message{}
+		msg := domain.Message{}
 		err := rows.Scan(&msg.RoomID, &msg.DisplayName, &msg.Content, &msg.CreatedAt)
 		if err != nil {
 			return nil, err
