@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 	"whisperchat/internal/domain"
+	"whisperchat/internal/room"
 
 	"github.com/gorilla/websocket"
 )
@@ -41,8 +42,16 @@ func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request) {
 		RoomID:      roomID,
 	}
 
+	rm, err := h.service.JoinRoom(roomID, cl)
+	if err != nil {
+		cl.Conn.WriteMessage(websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseNormalClosure, err.Error()))
+		cl.Conn.Close()
+		return
+	}
+
 	go writePump(cl)
-	readPump(cl)
+	readPump(cl, rm)
 
 }
 
@@ -74,9 +83,10 @@ func writePump(client *domain.Client) {
 	}
 }
 
-func readPump(client *domain.Client) {
+func readPump(client *domain.Client, r *room.Room) {
 	defer func() {
 		client.Conn.Close()
+		r.Unregister <- client
 	}()
 
 	client.Conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -93,6 +103,9 @@ func readPump(client *domain.Client) {
 				return
 			}
 		}
-		log.Printf("[%s] %s: %s", client.RoomID, client.DisplayName, msg)
+		r.Broadcast <- &room.IncomingMessage{
+			Client:  client,
+			Content: string(msg),
+		}
 	}
 }
