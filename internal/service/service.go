@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"log"
-	"uuid"
 	"whisperchat/internal/domain"
 	"whisperchat/internal/room"
 
